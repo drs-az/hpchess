@@ -1,116 +1,75 @@
-<!DOCTYPE html><html lang="en">
+<!DOCTYPE html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Harry Potter Themed Chess</title>
-  <!-- Chessboard.js stylesheet -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/chessboard.js/1.0.0/chessboard.min.css" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wizard's Chess Setup</title>
   <style>
     html, body { height: 100%; margin: 0; padding: 0; }
     body {
-      background: url('https://wallpapercat.com/w/full/0/2/9/2164066-3000x1688-desktop-hd-hogwarts-castle-background.jpg') center center / cover no-repeat fixed;
+      background: url('https://wallpapercat.com/w/full/0/2/9/2164066-3000x1688-desktop-hd-hogwarts-castle-background.jpg') center/cover no-repeat fixed;
       font-family: 'Cinzel', serif;
       color: #f5f1e8;
-      display: flex; justify-content: center; align-items: center; text-align: center;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
     }
-    #container {
-      background: rgba(0,0,0,0.6);
+    #setup {
+      background: rgba(0, 0, 0, 0.6);
       padding: 20px;
       border-radius: 8px;
-      width: 520px;
+      width: 320px;
     }
-    #board {
-      width: 480px;
-      margin: 20px auto;
-      box-shadow: 0 0 20px rgba(0,0,0,0.7);
+    label {
+      display: block;
+      margin-top: 12px;
+      text-align: left;
     }
-    .info { display: flex; justify-content: space-around; margin-bottom: 10px; }
-    .player-info { background: rgba(255,255,255,0.1); padding: 8px; border-radius: 6px; width: 200px; }
-    #timer { font-size: 1.2rem; padding: 8px; background: rgba(0,0,0,0.4); border-radius: 6px; }
-    button { cursor: pointer; padding: 8px 16px; font-size: 1rem; border-radius: 4px; border: none; background: #7f1d1d; color: #fff; }
-    input, select { width: 100%; padding: 6px; margin: 4px 0; border-radius: 4px; border: 1px solid #ccc; box-sizing: border-box; }
+    input, select, button {
+      width: 100%;
+      padding: 8px;
+      margin-top: 6px;
+      border-radius: 4px;
+      border: none;
+      box-sizing: border-box;
+    }
+    button {
+      background: #7f1d1d;
+      color: #fff;
+      cursor: pointer;
+      font-size: 1rem;
+    }
   </style>
 </head>
 <body>
-  <div id="container">
-    <h1>Welcome to Wizard's Chess</h1>
-    <div id="playerSetup">
-      <label>Player 1 Name:<br><input type="text" id="p1Name" placeholder="e.g. Alaric Silverstaff"></label>
-      <label>House:<br><select id="p1House"><option>Gryffindor</option><option>Slytherin</option><option>Ravenclaw</option><option>Hufflepuff</option></select></label>
-      <label>Player 2 Name:<br><input type="text" id="p2Name" placeholder="e.g. Morwenna Darkbane"></label>
-      <label>House:<br><select id="p2House"><option>Gryffindor</option><option>Slytherin</option><option>Ravenclaw</option><option>Hufflepuff</option></select></label>
-      <button id="startBtn">Start Game</button>
-    </div>
-    <div id="gameArea" style="display:none;">
-      <div class="info">
-        <div class="player-info" id="info1"></div>
-        <div id="timer">--:--</div>
-        <div class="player-info" id="info2"></div>
-      </div>
-      <div id="board"></div>
-    </div>
-  </div>  <!-- Dependencies -->  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>  <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/1.0.0/chess.min.js"></script>  <script src="https://cdnjs.cloudflare.com/ajax/libs/chessboard.js/1.0.0/chessboard.min.js"></script>  <script>
-    // Ensure we use the correct constructor
-    const createBoard = typeof Chessboard === 'function'
-      ? Chessboard
-      : window.ChessBoard || null;
-
-    $('#startBtn').on('click', function() {
-      // Player info
-      window.p1Name = $('#p1Name').val() || 'Player 1';
-      window.p2Name = $('#p2Name').val() || 'Player 2';
-      const p1House = $('#p1House').val();
-      const p2House = $('#p2House').val();
-
-      // Update UI
-      $('#info1').text(`${p1Name} (${p1House}) - White`);
-      $('#info2').text(`${p2Name} (${p2House}) - Black`);
-      $('#playerSetup').hide();
-      $('#gameArea').show();
-
-      // Initialize game logic
-      game = new Chess();
-
-      // Render board with fallback
-      if (createBoard) {
-        board = createBoard('board', {
-          draggable: true,
-          position: 'start',
-          onDragStart: (source, piece) => {
-            if (game.game_over()) return false;
-            return !((game.turn() === 'w' && piece.startsWith('b')) || (game.turn() === 'b' && piece.startsWith('w')));
-          },
-          onDrop: (source, target) => {
-            const move = game.move({ from: source, to: target, promotion: 'q' });
-            if (!move) return 'snapback';
-            currentColor = game.turn() === 'w' ? 'black' : 'white';
-            startTimer();
-            if (game.game_over()) { clearInterval(timerInterval); alert('Game over!'); }
-          },
-          onSnapEnd: () => board.position(game.fen()),
-          pieceTheme: piece => 
-            `https://cdnjs.cloudflare.com/ajax/libs/chessboard.js/1.0.0/img/chesspieces/wikipedia/${piece}.png`
-        });
-      } else {
-        alert('Chessboard.js failed to load.');
-      }
-
-      currentColor = 'white';
-      startTimer();
-    });
-
-    function updateTimer() {
-      const mins = String(Math.floor(timeLeft / 60)).padStart(2, '0');
-      const secs = String(timeLeft % 60).padStart(2, '0');
-      $('#timer').text(`${mins}:${secs}`);
-      if (timeLeft <= 0) { clearInterval(timerInterval); alert(`${currentColor === 'white' ? p2Name : p1Name} wins by timeout!`); }
-      timeLeft--;
-    }
-
-    function startTimer() {
-      clearInterval(timerInterval);
-      timeLeft = 10 * 60;
-      timerInterval = setInterval(updateTimer, 1000);
-    }
-  </script></body>
+  <div id="setup">
+    <h1>Wizard's Chess Setup</h1>
+    <form action="game.html" method="GET">
+      <label>Player 1 Name:
+        <input type="text" name="p1Name" placeholder="e.g. Alaric Silverstaff" required>
+      </label>
+      <label>Player 1 House:
+        <select name="p1House">
+          <option>Gryffindor</option>
+          <option>Slytherin</option>
+          <option>Ravenclaw</option>
+          <option>Hufflepuff</option>
+        </select>
+      </label>
+      <label>Player 2 Name:
+        <input type="text" name="p2Name" placeholder="e.g. Morwenna Darkbane" required>
+      </label>
+      <label>Player 2 House:
+        <select name="p2House">
+          <option>Gryffindor</option>
+          <option>Slytherin</option>
+          <option>Ravenclaw</option>
+          <option>Hufflepuff</option>
+        </select>
+      </label>
+      <button type="submit">Start Game</button>
+    </form>
+  </div>
+</body>
 </html>
