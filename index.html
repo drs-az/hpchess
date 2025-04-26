@@ -49,11 +49,14 @@
       </div>
       <div id="board"></div>
     </div>
-  </div>  <!-- Dependencies: load jQuery first, then Chess.js, then Chessboard.js -->  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>  <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/1.0.0/chess.min.js"></script>  <script src="https://cdnjs.cloudflare.com/ajax/libs/chessboard.js/1.0.0/chessboard.min.js"></script>  <script>
-    // Globals
-    let board, game, timerInterval, timeLeft, currentColor;
+  </div>  <!-- Dependencies -->  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>  <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/1.0.0/chess.min.js"></script>  <script src="https://cdnjs.cloudflare.com/ajax/libs/chessboard.js/1.0.0/chessboard.min.js"></script>  <script>
+    // Ensure we use the correct constructor
+    const createBoard = typeof Chessboard === 'function'
+      ? Chessboard
+      : window.ChessBoard || null;
 
     $('#startBtn').on('click', function() {
+      // Player info
       window.p1Name = $('#p1Name').val() || 'Player 1';
       window.p2Name = $('#p2Name').val() || 'Player 2';
       const p1House = $('#p1House').val();
@@ -65,30 +68,32 @@
       $('#playerSetup').hide();
       $('#gameArea').show();
 
-      // Initialize Chess.js and Chessboard.js
+      // Initialize game logic
       game = new Chess();
-      board = Chessboard('board', {
-        draggable: true,
-        position: 'start',
-        onDragStart: function(source, piece) {
-          if (game.game_over()) return false;
-          if ((game.turn() === 'w' && piece.startsWith('b')) ||
-              (game.turn() === 'b' && piece.startsWith('w'))) return false;
-        },
-        onDrop: function(source, target) {
-          const move = game.move({ from: source, to: target, promotion: 'q' });
-          if (!move) return 'snapback';
-          currentColor = game.turn() === 'w' ? 'black' : 'white';
-          startTimer();
-          if (game.game_over()) { clearInterval(timerInterval); alert('Game over!'); }
-        },
-        onSnapEnd: function() {
-          board.position(game.fen());
-        },
-        pieceTheme: function(piece) {
-          return `https://cdnjs.cloudflare.com/ajax/libs/chessboard.js/1.0.0/img/chesspieces/wikipedia/${piece}.png`;
-        }
-      });
+
+      // Render board with fallback
+      if (createBoard) {
+        board = createBoard('board', {
+          draggable: true,
+          position: 'start',
+          onDragStart: (source, piece) => {
+            if (game.game_over()) return false;
+            return !((game.turn() === 'w' && piece.startsWith('b')) || (game.turn() === 'b' && piece.startsWith('w')));
+          },
+          onDrop: (source, target) => {
+            const move = game.move({ from: source, to: target, promotion: 'q' });
+            if (!move) return 'snapback';
+            currentColor = game.turn() === 'w' ? 'black' : 'white';
+            startTimer();
+            if (game.game_over()) { clearInterval(timerInterval); alert('Game over!'); }
+          },
+          onSnapEnd: () => board.position(game.fen()),
+          pieceTheme: piece => 
+            `https://cdnjs.cloudflare.com/ajax/libs/chessboard.js/1.0.0/img/chesspieces/wikipedia/${piece}.png`
+        });
+      } else {
+        alert('Chessboard.js failed to load.');
+      }
 
       currentColor = 'white';
       startTimer();
@@ -98,10 +103,7 @@
       const mins = String(Math.floor(timeLeft / 60)).padStart(2, '0');
       const secs = String(timeLeft % 60).padStart(2, '0');
       $('#timer').text(`${mins}:${secs}`);
-      if (timeLeft <= 0) {
-        clearInterval(timerInterval);
-        alert(`${currentColor === 'white' ? p2Name : p1Name} wins by timeout!`);
-      }
+      if (timeLeft <= 0) { clearInterval(timerInterval); alert(`${currentColor === 'white' ? p2Name : p1Name} wins by timeout!`); }
       timeLeft--;
     }
 
