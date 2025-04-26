@@ -21,9 +21,10 @@
       text-align: center;
     }
     #container {
-      background: rgba(0,0,0,0.5);
+      background: rgba(0,0,0,0.6);
       padding: 20px;
       border-radius: 8px;
+      width: 520px;
     }
     #board {
       width: 480px;
@@ -33,17 +34,19 @@
     .info {
       display: flex;
       justify-content: space-around;
-      margin: 10px auto;
-      width: 480px;
+      margin-bottom: 10px;
     }
     .player-info {
       background: rgba(255,255,255,0.1);
-      padding: 10px;
-      border-radius: 8px;
+      padding: 8px;
+      border-radius: 6px;
+      width: 200px;
     }
     #timer {
       font-size: 1.2rem;
-      margin-top: 10px;
+      padding: 8px;
+      background: rgba(0,0,0,0.4);
+      border-radius: 6px;
     }
     button {
       cursor: pointer;
@@ -55,8 +58,12 @@
       color: #fff;
     }
     input, select {
+      width: 100%;
+      padding: 6px;
       margin: 4px 0;
-      padding: 4px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+      box-sizing: border-box;
     }
   </style>
 </head>
@@ -65,7 +72,7 @@
     <h1>Welcome to Wizard's Chess</h1>
     <div id="playerSetup">
       <div>
-        <label>Player 1 Name:<br><input type="text" id="p1Name"></label><br>
+        <label>Player 1 Name:<br><input type="text" id="p1Name" placeholder="e.g. Alaric Silverstaff"></label>
         <label>House:<br><select id="p1House">
           <option>Gryffindor</option>
           <option>Slytherin</option>
@@ -73,8 +80,8 @@
           <option>Hufflepuff</option>
         </select></label>
       </div>
-      <div style="margin-top:10px;">
-        <label>Player 2 Name:<br><input type="text" id="p2Name"></label><br>
+      <div style="margin-top:12px;">
+        <label>Player 2 Name:<br><input type="text" id="p2Name" placeholder="e.g. Morwenna Darkbane"></label>
         <label>House:<br><select id="p2House">
           <option>Gryffindor</option>
           <option>Slytherin</option>
@@ -82,7 +89,7 @@
           <option>Hufflepuff</option>
         </select></label>
       </div>
-      <button id="startBtn" type="button" style="margin-top:15px;">Start Game</button>
+      <button id="startBtn" type="button" onclick="initGame()">Start Game</button>
     </div><div id="gameArea" style="display:none;">
   <div class="info">
     <div class="player-info" id="info1"></div>
@@ -96,9 +103,7 @@
     // Global variables
     let board;
     const game = new Chess();
-    let timerInterval;
-    let timeLeft;
-    let currentColor;
+    let timerInterval, timeLeft, currentColor;
 
     function updateTimer() {
       const mins = String(Math.floor(timeLeft / 60)).padStart(2, '0');
@@ -113,7 +118,7 @@
 
     function startTimer() {
       clearInterval(timerInterval);
-      timeLeft = 10 * 60; // restart countdown
+      timeLeft = 10 * 60; // 10 minutes
       timerInterval = setInterval(updateTimer, 1000);
     }
 
@@ -144,9 +149,9 @@
       board = Chessboard('board', {
         draggable: true,
         position: 'start',
-        onDragStart: onDragStart,
-        onDrop: onDrop,
-        onSnapEnd: onSnapEnd,
+        onDragStart,
+        onDrop,
+        onSnapEnd,
         pieceTheme: piece =>
           `https://cdnjs.cloudflare.com/ajax/libs/chessboard.js/1.0.0/img/chesspieces/wikipedia/${piece}.png`
       });
@@ -154,25 +159,16 @@
       startTimer();
     }
 
-    // Attach event listener directly
-    const startBtn = document.getElementById('startBtn');
-    startBtn.addEventListener('click', () => {
-      console.log('Start button clicked');
-      // Collect player info
+    function initGame() {
       window.p1Name = document.getElementById('p1Name').value || 'Player 1';
       window.p2Name = document.getElementById('p2Name').value || 'Player 2';
       const p1House = document.getElementById('p1House').value;
       const p2House = document.getElementById('p2House').value;
-      console.log('Players:', p1Name, p1House, p2Name, p2House);
-
-      // Update UI
       document.getElementById('info1').textContent = `${p1Name} (${p1House}) - White`;
       document.getElementById('info2').textContent = `${p2Name} (${p2House}) - Black`;
       document.getElementById('playerSetup').style.display = 'none';
       document.getElementById('gameArea').style.display = 'block';
-
-      // Initialize chessboard
       initBoard();
-    });
+    }
   </script></body>
 </html>
