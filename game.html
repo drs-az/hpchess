@@ -2,43 +2,27 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Wizard's Chess</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/chessboard.js/1.0.0/chessboard.min.css">
+  <title>Wizard's Chess (Modern)</title>
+  <link rel="stylesheet" href="https://unpkg.com/chessboardjs@2.1.1/dist/chessboard-1.0.0.min.css">
   <style>
-    html, body { height: 100%; margin: 0; padding: 0; background: black; color: white; font-family: 'Cinzel', serif; text-align: center; }
-    #board { width: 480px; height: 480px; margin: 20px auto; }
-    #players { margin: 20px; }
+    html, body { margin: 0; padding: 0; height: 100%; background: black; color: white; font-family: 'Cinzel', serif; text-align: center; }
+    #board { width: 400px; height: 400px; margin: 20px auto; }
   </style>
 </head>
 <body>
-  <h1>Wizard's Chess</h1>
-  <div id="players">
-    <div id="leftPlayer"></div>
-    <div id="rightPlayer"></div>
-  </div>
-  <div id="board"></div>
 
-  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/1.0.0/chess.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/chessboard.js/1.0.0/chessboard.min.js"></script>
-  <script>
-    $(function() {
-      const params = new URLSearchParams(window.location.search);
-      const p1Name = params.get('p1Name') || 'Player 1';
-      const p2Name = params.get('p2Name') || 'Player 2';
-      const p1House = params.get('p1House') || '';
-      const p2House = params.get('p2House') || '';
+<h1>Wizard's Chess</h1>
+<div id="board"></div>
 
-      $('#leftPlayer').text(`${p1Name} (${p1House}) - White`);
-      $('#rightPlayer').text(`${p2Name} (${p2House}) - Black`);
+<script src="https://unpkg.com/chessboardjs@2.1.1/dist/chessboard-1.0.0.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/1.0.0/chess.min.js"></script>
+<script>
+  const board = Chessboard('board', {
+    position: 'start',
+    pieceTheme: 'https://unpkg.com/chessboardjs@2.1.1/dist/img/chesspieces/wikipedia/{piece}.png',
+    draggable: true
+  });
+</script>
 
-      const board = ChessBoard('board', {
-        draggable: true,
-        position: 'start',
-        pieceTheme: 'https://cdnjs.cloudflare.com/ajax/libs/chessboard.js/1.0.0/img/chesspieces/wikipedia/{piece}.png'
-      });
-    });
-  </script>
 </body>
 </html>
