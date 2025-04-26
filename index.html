@@ -49,42 +49,45 @@
       </div>
       <div id="board"></div>
     </div>
-  </div>  <!-- Dependencies -->  <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/1.0.0/chess.min.js"></script>  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>  <script src="https://cdnjs.cloudflare.com/ajax/libs/chessboard.js/1.0.0/chessboard.min.js"></script>  <script>
+  </div>  <!-- Dependencies: load jQuery first, then Chess.js, then Chessboard.js -->  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>  <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/1.0.0/chess.min.js"></script>  <script src="https://cdnjs.cloudflare.com/ajax/libs/chessboard.js/1.0.0/chessboard.min.js"></script>  <script>
     // Globals
     let board, game, timerInterval, timeLeft, currentColor;
 
-    document.getElementById('startBtn').addEventListener('click', () => {
-      window.p1Name = document.getElementById('p1Name').value || 'Player 1';
-      window.p2Name = document.getElementById('p2Name').value || 'Player 2';
-      const p1House = document.getElementById('p1House').value;
-      const p2House = document.getElementById('p2House').value;
+    $('#startBtn').on('click', function() {
+      window.p1Name = $('#p1Name').val() || 'Player 1';
+      window.p2Name = $('#p2Name').val() || 'Player 2';
+      const p1House = $('#p1House').val();
+      const p2House = $('#p2House').val();
 
       // Update UI
-      document.getElementById('info1').textContent = `${p1Name} (${p1House}) - White`;
-      document.getElementById('info2').textContent = `${p2Name} (${p2House}) - Black`;
-      document.getElementById('playerSetup').style.display = 'none';
-      document.getElementById('gameArea').style.display = 'block';
+      $('#info1').text(`${p1Name} (${p1House}) - White`);
+      $('#info2').text(`${p2Name} (${p2House}) - Black`);
+      $('#playerSetup').hide();
+      $('#gameArea').show();
 
       // Initialize Chess.js and Chessboard.js
       game = new Chess();
       board = Chessboard('board', {
         draggable: true,
         position: 'start',
-        onDragStart: (source, piece) => {
+        onDragStart: function(source, piece) {
           if (game.game_over()) return false;
           if ((game.turn() === 'w' && piece.startsWith('b')) ||
               (game.turn() === 'b' && piece.startsWith('w'))) return false;
         },
-        onDrop: (source, target) => {
+        onDrop: function(source, target) {
           const move = game.move({ from: source, to: target, promotion: 'q' });
           if (!move) return 'snapback';
           currentColor = game.turn() === 'w' ? 'black' : 'white';
           startTimer();
           if (game.game_over()) { clearInterval(timerInterval); alert('Game over!'); }
         },
-        onSnapEnd: () => board.position(game.fen()),
-        pieceTheme: piece =>
-          `https://cdnjs.cloudflare.com/ajax/libs/chessboard.js/1.0.0/img/chesspieces/wikipedia/${piece}.png`
+        onSnapEnd: function() {
+          board.position(game.fen());
+        },
+        pieceTheme: function(piece) {
+          return `https://cdnjs.cloudflare.com/ajax/libs/chessboard.js/1.0.0/img/chesspieces/wikipedia/${piece}.png`;
+        }
       });
 
       currentColor = 'white';
@@ -94,7 +97,7 @@
     function updateTimer() {
       const mins = String(Math.floor(timeLeft / 60)).padStart(2, '0');
       const secs = String(timeLeft % 60).padStart(2, '0');
-      document.getElementById('timer').textContent = `${mins}:${secs}`;
+      $('#timer').text(`${mins}:${secs}`);
       if (timeLeft <= 0) {
         clearInterval(timerInterval);
         alert(`${currentColor === 'white' ? p2Name : p1Name} wins by timeout!`);
