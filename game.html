@@ -1,17 +1,48 @@
-<!DOCTYPE html><html lang="en">
+<!DOCTYPE html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Wizard's Chess</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/chessboard.js/1.0.0/chessboard.min.css">
   <style>
-    html, body { height:100%; margin:0; padding:0; }
-    body { background:url('https://wallpapercat.com/w/full/0/2/9/2164066-3000x1688-desktop-hd-hogwarts-castle-background.jpg') center/cover no-repeat fixed; font-family:'Cinzel', serif; color:#f5f1e8; }
-    #game { padding:20px; background:rgba(0,0,0,0.6); max-width:600px; margin:40px auto; border-radius:8px; }
-    .info { display:flex; justify-content:space-between; align-items:center; }
-    .player { background:rgba(255,255,255,0.1); padding:8px; border-radius:6px; width:45%; text-align:center; }
-    #timer { font-size:1.2rem; }
-    #board { width:480px; margin:20px auto; box-shadow:0 0 20px rgba(0,0,0,0.7); }
+    html, body { height: 100%; margin: 0; padding: 0; }
+    body {
+      background: url('https://wallpapercat.com/w/full/0/2/9/2164066-3000x1688-desktop-hd-hogwarts-castle-background.jpg') center/cover no-repeat fixed;
+      font-family: 'Cinzel', serif;
+      color: #f5f1e8;
+    }
+    #game {
+      padding: 20px;
+      background: rgba(0, 0, 0, 0.6);
+      max-width: 600px;
+      margin: 40px auto;
+      border-radius: 8px;
+      text-align: center;
+    }
+    .info {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .player {
+      background: rgba(255,255,255,0.1);
+      padding: 8px;
+      border-radius: 6px;
+      width: 45%;
+      text-align: center;
+    }
+    #timer {
+      font-size: 1.2rem;
+      padding: 8px;
+      background: rgba(0,0,0,0.4);
+      border-radius: 6px;
+    }
+    #board {
+      width: 480px;
+      margin: 20px auto;
+      box-shadow: 0 0 20px rgba(0,0,0,0.7);
+    }
   </style>
 </head>
 <body>
@@ -23,48 +54,66 @@
       <div class="player" id="rightPlayer"></div>
     </div>
     <div id="board"></div>
-  </div>  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>  <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/1.0.0/chess.min.js"></script>  <script src="https://cdnjs.cloudflare.com/ajax/libs/chessboard.js/1.0.0/chessboard.min.js"></script>  <script>
-    // Parse URL params
+  </div>
+
+  <!-- Scripts -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/1.0.0/chess.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/chessboard.js/1.0.0/chessboard.min.js"></script>
+  <script>
     const params = new URLSearchParams(window.location.search);
     const p1Name = params.get('p1Name') || 'Player 1';
     const p2Name = params.get('p2Name') || 'Player 2';
     const p1House = params.get('p1House') || '';
     const p2House = params.get('p2House') || '';
 
-    // Display names/houses
-    $('#leftPlayer').text(`${p1Name} (${p1House}) - White`);
-    $('#rightPlayer').text(`${p2Name} (${p2House}) - Black`);
+    document.getElementById('leftPlayer').textContent = `${p1Name} (${p1House}) - White`;
+    document.getElementById('rightPlayer').textContent = `${p2Name} (${p2House}) - Black`;
 
-    // Chess setup
     let game = new Chess();
-    let board = Chessboard('board', {
+    let board = new ChessBoard('board', {
       draggable: true,
       position: 'start',
-      onDragStart: (source, piece) => {
+      pieceTheme: piece => `https://cdnjs.cloudflare.com/ajax/libs/chessboard.js/1.0.0/img/chesspieces/wikipedia/${piece}.png`,
+      onDragStart: function (source, piece) {
         if (game.game_over()) return false;
-        if ((game.turn() === 'w' && piece.startsWith('b')) || (game.turn() === 'b' && piece.startsWith('w'))) return false;
+        if ((game.turn() === 'w' && piece.search(/^b/) !== -1) ||
+            (game.turn() === 'b' && piece.search(/^w/) !== -1)) {
+          return false;
+        }
       },
-      onDrop: (source, target) => {
+      onDrop: function (source, target) {
         const move = game.move({ from: source, to: target, promotion: 'q' });
-        if (!move) return 'snapback';
+        if (move === null) return 'snapback';
         currentColor = game.turn() === 'w' ? 'black' : 'white';
         startTimer();
-        if (game.game_over()) { clearInterval(timerInterval); alert('Game over!'); }
+        if (game.game_over()) {
+          clearInterval(timerInterval);
+          alert('Game over!');
+        }
       },
-      onSnapEnd: () => board.position(game.fen()),
-      pieceTheme: piece => `https://cdnjs.cloudflare.com/ajax/libs/chessboard.js/1.0.0/img/chesspieces/wikipedia/${piece}.png`
+      onSnapEnd: function () {
+        board.position(game.fen());
+      }
     });
 
-    // Timer
     let timerInterval, timeLeft = 10 * 60, currentColor = 'white';
     function updateTimer() {
-      const m = String(Math.floor(timeLeft/60)).padStart(2,'0');
-      const s = String(timeLeft%60).padStart(2,'0');
-      $('#timer').text(`${m}:${s}`);
-      if (timeLeft<=0) { clearInterval(timerInterval); alert((currentColor==='white'?p2Name:p1Name)+' wins by timeout!'); }
+      const m = String(Math.floor(timeLeft / 60)).padStart(2, '0');
+      const s = String(timeLeft % 60).padStart(2, '0');
+      document.getElementById('timer').textContent = `${m}:${s}`;
+      if (timeLeft <= 0) {
+        clearInterval(timerInterval);
+        alert(`${currentColor === 'white' ? p2Name : p1Name} wins by timeout!`);
+      }
       timeLeft--;
     }
-    function startTimer() { clearInterval(timerInterval); timeLeft=10*60; timerInterval = setInterval(updateTimer,1000); }
+    function startTimer() {
+      clearInterval(timerInterval);
+      timeLeft = 10 * 60;
+      timerInterval = setInterval(updateTimer, 1000);
+    }
     startTimer();
-  </script></body>
+  </script>
+</body>
 </html>
