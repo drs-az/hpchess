@@ -6,61 +6,19 @@
   <title>Wizard's Chess</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/chessboard.js/1.0.0/chessboard.min.css">
   <style>
-    html, body {
-      height: 100%;
-      margin: 0;
-      padding: 0;
-    }
-    body {
-      background: url('https://wallpapercat.com/w/full/0/2/9/2164066-3000x1688-desktop-hd-hogwarts-castle-background.jpg') center/cover no-repeat fixed;
-      font-family: 'Cinzel', serif;
-      color: #f5f1e8;
-      text-align: center;
-    }
-    #game {
-      padding: 20px;
-      background: rgba(0, 0, 0, 0.6);
-      max-width: 600px;
-      margin: 40px auto;
-      border-radius: 8px;
-    }
-    .info {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .player {
-      background: rgba(255,255,255,0.1);
-      padding: 8px;
-      border-radius: 6px;
-      width: 45%;
-      font-size: 0.9rem;
-    }
-    #timer {
-      font-size: 1.2rem;
-      background: rgba(0,0,0,0.4);
-      border-radius: 6px;
-      padding: 8px;
-    }
-    #board {
-      margin: 20px auto;
-      box-shadow: 0 0 20px rgba(0,0,0,0.7);
-    }
+    html, body { height: 100%; margin: 0; padding: 0; background: black; color: white; font-family: 'Cinzel', serif; text-align: center; }
+    #board { width: 480px; height: 480px; margin: 20px auto; }
+    #players { margin: 20px; }
   </style>
 </head>
 <body>
-  <div id="game">
-    <h1>Wizard's Chess</h1>
-    <div class="info">
-      <div class="player" id="leftPlayer"></div>
-      <div id="timer">--:--</div>
-      <div class="player" id="rightPlayer"></div>
-    </div>
-    <!-- FIX: inline width/height so board always renders -->
-    <div id="board" style="width: 480px; height: 480px;"></div>
+  <h1>Wizard's Chess</h1>
+  <div id="players">
+    <div id="leftPlayer"></div>
+    <div id="rightPlayer"></div>
   </div>
+  <div id="board"></div>
 
-  <!-- Scripts -->
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/1.0.0/chess.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/chessboard.js/1.0.0/chessboard.min.js"></script>
@@ -75,37 +33,11 @@
       $('#leftPlayer').text(`${p1Name} (${p1House}) - White`);
       $('#rightPlayer').text(`${p2Name} (${p2House}) - Black`);
 
-      var board = ChessBoard('board', {
+      const board = ChessBoard('board', {
         draggable: true,
         position: 'start',
-        pieceTheme: function(piece) {
-          return 'https://cdnjs.cloudflare.com/ajax/libs/chessboard.js/1.0.0/img/chesspieces/wikipedia/' + piece + '.png';
-        }
+        pieceTheme: 'https://cdnjs.cloudflare.com/ajax/libs/chessboard.js/1.0.0/img/chesspieces/wikipedia/{piece}.png'
       });
-
-      var game = new Chess();
-      var timerInterval;
-      var timeLeft = 10 * 60;
-      var currentColor = 'white';
-
-      function updateTimer() {
-        const m = String(Math.floor(timeLeft/60)).padStart(2,'0');
-        const s = String(timeLeft%60)).padStart(2,'0');
-        $('#timer').text(`${m}:${s}`);
-        if (timeLeft <= 0) {
-          clearInterval(timerInterval);
-          alert(`${currentColor==='white' ? p2Name : p1Name} wins by timeout!`);
-        }
-        timeLeft--;
-      }
-
-      function startTimer() {
-        clearInterval(timerInterval);
-        timeLeft = 10 * 60;
-        timerInterval = setInterval(updateTimer, 1000);
-      }
-
-      startTimer();
     });
   </script>
 </body>
