@@ -24,31 +24,11 @@
       margin: 20px auto;
       box-shadow: 0 0 20px rgba(0,0,0,0.7);
     }
-    .info {
-      display: flex; justify-content: space-around; margin-bottom: 10px;
-    }
-    .player-info {
-      background: rgba(255,255,255,0.1);
-      padding: 8px; border-radius: 6px; width: 200px;
-    }
-    #timer {
-      font-size: 1.2rem;
-      padding: 8px;
-      background: rgba(0,0,0,0.4);
-      border-radius: 6px;
-    }
-    button {
-      cursor: pointer;
-      padding: 8px 16px;
-      font-size: 1rem;
-      border-radius: 4px;
-      border: none;
-      background: #7f1d1d;
-      color: #fff;
-    }
-    input, select {
-      width: 100%; padding: 6px; margin: 4px 0; border-radius: 4px; border: 1px solid #ccc; box-sizing: border-box;
-    }
+    .info { display: flex; justify-content: space-around; margin-bottom: 10px; }
+    .player-info { background: rgba(255,255,255,0.1); padding: 8px; border-radius: 6px; width: 200px; }
+    #timer { font-size: 1.2rem; padding: 8px; background: rgba(0,0,0,0.4); border-radius: 6px; }
+    button { cursor: pointer; padding: 8px 16px; font-size: 1rem; border-radius: 4px; border: none; background: #7f1d1d; color: #fff; }
+    input, select { width: 100%; padding: 6px; margin: 4px 0; border-radius: 4px; border: 1px solid #ccc; box-sizing: border-box; }
   </style>
 </head>
 <body>
@@ -60,23 +40,56 @@
       <label>Player 2 Name:<br><input type="text" id="p2Name" placeholder="e.g. Morwenna Darkbane"></label>
       <label>House:<br><select id="p2House"><option>Gryffindor</option><option>Slytherin</option><option>Ravenclaw</option><option>Hufflepuff</option></select></label>
       <button id="startBtn">Start Game</button>
-    </div><div id="gameArea" style="display:none;">
-  <div class="info">
-    <div class="player-info" id="info1"></div>
-    <div id="timer">--:--</div>
-    <div class="player-info" id="info2"></div>
-  </div>
-  <div id="board"></div>
-</div>
-
-  </div>  <!-- Dependencies -->  <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/1.0.0/chess.min.js"></script>  <script src="https://cdnjs.cloudflare.com/ajax/libs/chessboard.js/1.0.0/chessboard.min.js"></script>  <script>
+    </div>
+    <div id="gameArea" style="display:none;">
+      <div class="info">
+        <div class="player-info" id="info1"></div>
+        <div id="timer">--:--</div>
+        <div class="player-info" id="info2"></div>
+      </div>
+      <div id="board"></div>
+    </div>
+  </div>  <!-- Dependencies -->  <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/1.0.0/chess.min.js"></script>  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>  <script src="https://cdnjs.cloudflare.com/ajax/libs/chessboard.js/1.0.0/chessboard.min.js"></script>  <script>
     // Globals
     let board, game, timerInterval, timeLeft, currentColor;
 
-    // Initialize Chess rules
-    function setupGame() {
+    document.getElementById('startBtn').addEventListener('click', () => {
+      window.p1Name = document.getElementById('p1Name').value || 'Player 1';
+      window.p2Name = document.getElementById('p2Name').value || 'Player 2';
+      const p1House = document.getElementById('p1House').value;
+      const p2House = document.getElementById('p2House').value;
+
+      // Update UI
+      document.getElementById('info1').textContent = `${p1Name} (${p1House}) - White`;
+      document.getElementById('info2').textContent = `${p2Name} (${p2House}) - Black`;
+      document.getElementById('playerSetup').style.display = 'none';
+      document.getElementById('gameArea').style.display = 'block';
+
+      // Initialize Chess.js and Chessboard.js
       game = new Chess();
-    }
+      board = Chessboard('board', {
+        draggable: true,
+        position: 'start',
+        onDragStart: (source, piece) => {
+          if (game.game_over()) return false;
+          if ((game.turn() === 'w' && piece.startsWith('b')) ||
+              (game.turn() === 'b' && piece.startsWith('w'))) return false;
+        },
+        onDrop: (source, target) => {
+          const move = game.move({ from: source, to: target, promotion: 'q' });
+          if (!move) return 'snapback';
+          currentColor = game.turn() === 'w' ? 'black' : 'white';
+          startTimer();
+          if (game.game_over()) { clearInterval(timerInterval); alert('Game over!'); }
+        },
+        onSnapEnd: () => board.position(game.fen()),
+        pieceTheme: piece =>
+          `https://cdnjs.cloudflare.com/ajax/libs/chessboard.js/1.0.0/img/chesspieces/wikipedia/${piece}.png`
+      });
+
+      currentColor = 'white';
+      startTimer();
+    });
 
     function updateTimer() {
       const mins = String(Math.floor(timeLeft / 60)).padStart(2, '0');
@@ -94,55 +107,5 @@
       timeLeft = 10 * 60;
       timerInterval = setInterval(updateTimer, 1000);
     }
-
-    function onDragStart(source, piece) {
-      if (game.game_over()) return false;
-      if ((game.turn() === 'w' && piece.startsWith('b')) ||
-          (game.turn() === 'b' && piece.startsWith('w'))) {
-        return false;
-      }
-    }
-
-    function onDrop(source, target) {
-      const move = game.move({ from: source, to: target, promotion: 'q' });
-      if (!move) return 'snapback';
-      currentColor = game.turn() === 'w' ? 'black' : 'white';
-      startTimer();
-      if (game.game_over()) {
-        clearInterval(timerInterval);
-        alert('Game over!');
-      }
-    }
-
-    function onSnapEnd() {
-      board.position(game.fen());
-    }
-
-    // Called by click
-    document.getElementById('startBtn').addEventListener('click', () => {
-      window.p1Name = document.getElementById('p1Name').value || 'Player 1';
-      window.p2Name = document.getElementById('p2Name').value || 'Player 2';
-      const p1House = document.getElementById('p1House').value;
-      const p2House = document.getElementById('p2House').value;
-
-      // Show info
-      document.getElementById('info1').textContent = `${p1Name} (${p1House}) - White`;
-      document.getElementById('info2').textContent = `${p2Name} (${p2House}) - Black`;
-      document.getElementById('playerSetup').style.display = 'none';
-      document.getElementById('gameArea').style.display = 'block';
-
-      // Setup and render board
-      setupGame();
-      board = Chessboard('board', {
-        draggable: true,
-        position: 'start',
-        onDragStart, onDrop, onSnapEnd,
-        pieceTheme: piece =>
-          `https://cdnjs.cloudflare.com/ajax/libs/chessboard.js/1.0.0/img/chesspieces/wikipedia/${piece}.png`
-      });
-
-      currentColor = 'white';
-      startTimer();
-    });
   </script></body>
 </html>
