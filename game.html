@@ -40,6 +40,7 @@
     }
     #board {
       width: 480px;
+      height: 480px; /* FIXED: Explicit height added */
       margin: 20px auto;
       box-shadow: 0 0 20px rgba(0,0,0,0.7);
     }
@@ -99,12 +100,12 @@
 
     let timerInterval, timeLeft = 10 * 60, currentColor = 'white';
     function updateTimer() {
-      const m = String(Math.floor(timeLeft / 60)).padStart(2, '0');
-      const s = String(timeLeft % 60).padStart(2, '0');
+      const m = String(Math.floor(timeLeft/60)).padStart(2,'0');
+      const s = String(timeLeft%60).padStart(2,'0');
       document.getElementById('timer').textContent = `${m}:${s}`;
-      if (timeLeft <= 0) {
+      if (timeLeft<=0) {
         clearInterval(timerInterval);
-        alert(`${currentColor === 'white' ? p2Name : p1Name} wins by timeout!`);
+        alert(`${currentColor==='white'?p2Name:p1Name} wins by timeout!`);
       }
       timeLeft--;
     }
