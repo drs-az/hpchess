@@ -5,7 +5,7 @@
   <title>Color Memory Matching Game</title>
   <style>
     body { display: flex; flex-direction: column; align-items: center; font-family: sans-serif; margin: 20px; }
-    #game { display: grid; grid-template-columns: repeat(16, 40px); grid-template-rows: repeat(16, 40px); gap: 5px; }
+    #game { display: grid; gap: 5px; }
     .card {
       width: 40px; height: 40px;
       background-color: #888;
@@ -13,45 +13,70 @@
       border-radius: 4px;
       transition: background-color 0.3s;
     }
-    .card.flipped, .card.matched {
-      cursor: default;
-    }
-    #status { margin-top: 20px; }
+    .card.flipped, .card.matched { cursor: default; }
+    #controls { margin-top: 20px; }
+    #status { margin-top: 10px; }
+    button { padding: 8px 12px; font-size: 1rem; cursor: pointer; }
   </style>
 </head>
 <body>
   <h1>Color Memory Matching</h1>
+  <div id="controls">
+    <button id="restartBtn">Restart Game</button>
+  </div>
   <div id="game"></div>
-  <div id="status">Matches: 0 / 128</div>  <script>
-    const size = 16;
-    const total = size * size; // 256
-    const pairs = total / 2; // 128
-    
-    // Generate 128 distinct colors using HSL
-    const colors = [];
-    for (let i = 0; i < pairs; i++) {
-      const hue = Math.round(i * 360 / pairs);
-      colors.push(`hsl(${hue}, 70%, 60%)`);
-    }
-    
-    // Duplicate and shuffle
-    const deck = [...colors, ...colors];
-    deck.sort(() => Math.random() - 0.5);
-    
+  <div id="status">Matches: 0</div>  <script>
     const game = document.getElementById('game');
     const status = document.getElementById('status');
-    let first = null, second = null;
-    let lock = false;
-    let matches = 0;
+    const restartBtn = document.getElementById('restartBtn');
+    let first, second, lock, matches;
+    let size, total, pairs, deck;
 
-    // Create cards
-    deck.forEach(color => {
-      const card = document.createElement('div');
-      card.classList.add('card');
-      card.dataset.color = color;
-      card.addEventListener('click', () => flipCard(card));
-      game.appendChild(card);
-    });
+    // Prompt and initialize game
+    function startGame() {
+      const input = prompt('Enter grid size (even number, e.g. 4 for 4×4, 16 for 16×16):', '16');
+      const n = parseInt(input);
+      if (!n || n < 2 || n % 2 !== 0) {
+        alert('Invalid size. Using default 16×16.');
+        size = 16;
+      } else {
+        size = n;
+      }
+      initGame();
+    }
+
+    function initGame() {
+      // Reset variables
+      game.innerHTML = '';
+      first = second = null;
+      lock = false;
+      matches = 0;
+      total = size * size;
+      pairs = total / 2;
+      status.textContent = `Matches: 0 / ${pairs}`;
+
+      // Generate color pairs
+      const colors = [];
+      for (let i = 0; i < pairs; i++) {
+        const hue = Math.round(i * 360 / pairs);
+        colors.push(`hsl(${hue}, 70%, 60%)`);
+      }
+      deck = [...colors, ...colors];
+      deck.sort(() => Math.random() - 0.5);
+
+      // Set grid dimensions
+      game.style.gridTemplateColumns = `repeat(${size}, 40px)`;
+      game.style.gridTemplateRows = `repeat(${size}, 40px)`;
+
+      // Create cards
+      deck.forEach(color => {
+        const card = document.createElement('div');
+        card.classList.add('card');
+        card.dataset.color = color;
+        card.addEventListener('click', () => flipCard(card));
+        game.appendChild(card);
+      });
+    }
 
     function flipCard(card) {
       if (lock || card === first || card.classList.contains('matched')) return;
@@ -69,14 +94,12 @@
     function checkMatch() {
       lock = true;
       if (first.dataset.color === second.dataset.color) {
-        // Matched
         first.classList.add('matched');
         second.classList.add('matched');
         matches++;
         updateStatus();
         resetTurn();
       } else {
-        // Not a match
         setTimeout(() => {
           first.classList.remove('flipped');
           second.classList.remove('flipped');
@@ -88,7 +111,7 @@
     }
 
     function resetTurn() {
-      [first, second] = [null, null];
+      first = second = null;
       lock = false;
     }
 
@@ -98,5 +121,9 @@
         status.textContent = 'Congratulations! You matched all colors.';
       }
     }
+
+    // Event listeners
+    restartBtn.addEventListener('click', startGame);
+    window.addEventListener('load', startGame);
   </script></body>
 </html>
