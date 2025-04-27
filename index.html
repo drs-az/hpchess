@@ -1,35 +1,174 @@
-<!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE html><html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Wizard's Chess Setup</title>
-  <style>
-    html, body { height: 100%; margin: 0; padding: 0; background: black; color: white; display: flex; justify-content: center; align-items: center; font-family: 'Cinzel', serif; }
-    #setup { background: rgba(0,0,0,0.6); padding: 20px; border-radius: 8px; width: 320px; }
-    label { display: block; margin-top: 12px; }
-    input, select, button { width: 100%; padding: 8px; margin-top: 6px; border-radius: 4px; }
-    button { background: #7f1d1d; color: white; cursor: pointer; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Harry Potter Chess</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/chessboard.js/1.0.0/chessboard-1.0.0.min.css">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: url('https://images.unsplash.com/photo-1523987355523-c7b5b1c04eb8') center/cover no-repeat;
+            color: white;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            margin-top: 50px;
+        }
+        .hidden {
+            display: none;
+        }
+        select, input, button {
+            margin: 10px;
+            padding: 10px;
+            font-size: 1em;
+        }
+        #chessBoard {
+            margin: 20px auto;
+            width: 400px;
+        }
+        .info {
+            margin: 20px;
+        }
+        .clock {
+            margin-top: 10px;
+            font-size: 1.5em;
+        }
+        .gryffindor { color: #ae0001; }
+        .slytherin { color: #2a623d; }
+        .hufflepuff { color: #ffdb00; }
+        .ravenclaw { color: #222f5b; }
+    </style>
 </head>
 <body>
-  <div id="setup">
-    <h1>Wizard's Chess</h1>
-    <form action="game.html" method="GET">
-      <label>Player 1 Name: <input type="text" name="p1Name" required></label>
-      <label>House:
-        <select name="p1House">
-          <option>Gryffindor</option><option>Slytherin</option><option>Ravenclaw</option><option>Hufflepuff</option>
+<div class="container" id="setup">
+    <h1>Harry Potter Chess</h1>
+    <div>
+        <input type="text" id="player1Name" placeholder="Player 1 Name">
+        <select id="player1House">
+            <option value="gryffindor">Gryffindor</option>
+            <option value="slytherin">Slytherin</option>
+            <option value="hufflepuff">Hufflepuff</option>
+            <option value="ravenclaw">Ravenclaw</option>
         </select>
-      </label>
-      <label>Player 2 Name: <input type="text" name="p2Name" required></label>
-      <label>House:
-        <select name="p2House">
-          <option>Gryffindor</option><option>Slytherin</option><option>Ravenclaw</option><option>Hufflepuff</option>
+    </div>
+    <div>
+        <input type="text" id="player2Name" placeholder="Player 2 Name">
+        <select id="player2House">
+            <option value="gryffindor">Gryffindor</option>
+            <option value="slytherin">Slytherin</option>
+            <option value="hufflepuff">Hufflepuff</option>
+            <option value="ravenclaw">Ravenclaw</option>
         </select>
-      </label>
-      <button type="submit">Start Game</button>
-    </form>
-  </div>
-</body>
+    </div>
+    <button onclick="startGame()">Start Game</button>
+</div><div class="container hidden" id="game">
+    <div class="info">
+        <h2 id="player1Info"></h2>
+        <div class="clock" id="player1Clock">5:00</div>
+        <h2 id="player2Info"></h2>
+        <div class="clock" id="player2Clock">5:00</div>
+    </div>
+    <div id="chessBoard"></div>
+</div><script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.2/chess.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/chessboard.js/1.0.0/chessboard-1.0.0.min.js"></script><script>
+let timer1, timer2;
+let time1 = 300; // 5 minutes
+let time2 = 300;
+let currentPlayer = 'w';
+let board;
+let game = new Chess();
+let player1House, player2House;
+
+function startGame() {
+    const p1Name = document.getElementById('player1Name').value;
+    player1House = document.getElementById('player1House').value;
+    const p2Name = document.getElementById('player2Name').value;
+    player2House = document.getElementById('player2House').value;
+
+    document.getElementById('player1Info').innerHTML = `<span class="${player1House}">${p1Name} (${capitalize(player1House)})</span>`;
+    document.getElementById('player2Info').innerHTML = `<span class="${player2House}">${p2Name} (${capitalize(player2House)})</span>`;
+
+    document.getElementById('setup').classList.add('hidden');
+    document.getElementById('game').classList.remove('hidden');
+
+    drawBoard();
+    startClocks();
+}
+
+function capitalize(word) {
+    return word.charAt(0).toUpperCase() + word.slice(1);
+}
+
+function drawBoard() {
+    board = Chessboard('chessBoard', {
+        position: 'start',
+        draggable: true,
+        onDrop: onDrop
+    });
+}
+
+function onDrop(source, target) {
+    let move = game.move({
+        from: source,
+        to: target,
+        promotion: 'q'
+    });
+
+    if (move === null) return 'snapback';
+
+    switchPlayer();
+    checkGameOver();
+}
+
+function switchPlayer() {
+    currentPlayer = currentPlayer === 'w' ? 'b' : 'w';
+}
+
+function startClocks() {
+    timer1 = setInterval(() => {
+        if (currentPlayer === 'w') {
+            time1--;
+            updateClock('player1Clock', time1);
+            if (time1 <= 0) {
+                clearInterval(timer1);
+                clearInterval(timer2);
+                alert("Black wins on time!");
+            }
+        }
+    }, 1000);
+
+    timer2 = setInterval(() => {
+        if (currentPlayer === 'b') {
+            time2--;
+            updateClock('player2Clock', time2);
+            if (time2 <= 0) {
+                clearInterval(timer1);
+                clearInterval(timer2);
+                alert("White wins on time!");
+            }
+        }
+    }, 1000);
+}
+
+function updateClock(clockId, time) {
+    const minutes = Math.floor(time / 60);
+    const seconds = time % 60;
+    document.getElementById(clockId).textContent = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+}
+
+function checkGameOver() {
+    if (game.game_over()) {
+        clearInterval(timer1);
+        clearInterval(timer2);
+        if (game.in_checkmate()) {
+            alert(`${currentPlayer === 'w' ? 'Black' : 'White'} wins by checkmate!`);
+        } else if (game.in_draw()) {
+            alert('Draw!');
+        } else if (game.in_stalemate()) {
+            alert('Stalemate!');
+        }
+    }
+}
+</script></body>
 </html>
