@@ -2,160 +2,101 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Claw Machine Game</title>
+  <title>Color Memory Matching Game</title>
   <style>
-    body { margin: 0; font-family: sans-serif; text-align: center; background: #f0f0f0; }
-    #gameCanvas { background: #222; display: block; margin: 20px auto; border: 2px solid #000; }
-    #controls { margin: 10px; }
-    button { padding: 10px 20px; margin: 5px; font-size: 16px; cursor: pointer; }
+    body { display: flex; flex-direction: column; align-items: center; font-family: sans-serif; margin: 20px; }
+    #game { display: grid; grid-template-columns: repeat(16, 40px); grid-template-rows: repeat(16, 40px); gap: 5px; }
+    .card {
+      width: 40px; height: 40px;
+      background-color: #888;
+      cursor: pointer;
+      border-radius: 4px;
+      transition: background-color 0.3s;
+    }
+    .card.flipped, .card.matched {
+      cursor: default;
+    }
+    #status { margin-top: 20px; }
   </style>
 </head>
 <body>
-  <h1>Claw Machine</h1>
-  <div>Tokens: <span id="tokenCount">0</span> | Score: <span id="score">0</span></div>
-  <div id="controls">
-    <button id="addTokenBtn">Insert Token</button>
-    <button id="dropBtn">Drop Claw</button>
-  </div>
-  <canvas id="gameCanvas" width="400" height="600"></canvas>  <script>
-    const canvas = document.getElementById('gameCanvas');
-    const ctx = canvas.getContext('2d');
-    const tokenCountEl = document.getElementById('tokenCount');
-    const scoreEl = document.getElementById('score');
-
-    let tokenCount = 0;
-    let score = 0;
-
-    // Claw definition
-    const claw = {
-      x: canvas.width / 2 - 20,
-      y: 0,
-      width: 40,
-      height: 20,
-      speed: 4,
-      state: 'idle', // 'idle', 'movingLeft', 'movingRight', 'dropping', 'lifting'
-      targetY: 0,
-      caughtPrize: null
-    };
-
-    // Prize setup
-    const prizes = [];
-    const prizeRadius = 15;
-    function initPrizes() {
-      prizes.length = 0;
-      for (let i = 0; i < 8; i++) {
-        const x = 50 + (i % 4) * 80 + (Math.random() * 20 - 10);
-        const y = 300 + Math.floor(i / 4) * 60 + (Math.random() * 20 - 10);
-        prizes.push({
-          x,
-          y,
-          caught: false,
-          color: `hsl(${Math.random() * 360}, 70%, 60%)`
-        });
-      }
+  <h1>Color Memory Matching</h1>
+  <div id="game"></div>
+  <div id="status">Matches: 0 / 128</div>  <script>
+    const size = 16;
+    const total = size * size; // 256
+    const pairs = total / 2; // 128
+    
+    // Generate 128 distinct colors using HSL
+    const colors = [];
+    for (let i = 0; i < pairs; i++) {
+      const hue = Math.round(i * 360 / pairs);
+      colors.push(`hsl(${hue}, 70%, 60%)`);
     }
-    initPrizes();
+    
+    // Duplicate and shuffle
+    const deck = [...colors, ...colors];
+    deck.sort(() => Math.random() - 0.5);
+    
+    const game = document.getElementById('game');
+    const status = document.getElementById('status');
+    let first = null, second = null;
+    let lock = false;
+    let matches = 0;
 
-    // Game loop
-    function update() {
-      // Horizontal movement
-      if (claw.state === 'movingLeft') claw.x = Math.max(0, claw.x - claw.speed);
-      if (claw.state === 'movingRight') claw.x = Math.min(canvas.width - claw.width, claw.x + claw.speed);
+    // Create cards
+    deck.forEach(color => {
+      const card = document.createElement('div');
+      card.classList.add('card');
+      card.dataset.color = color;
+      card.addEventListener('click', () => flipCard(card));
+      game.appendChild(card);
+    });
 
-      // Dropping
-      if (claw.state === 'dropping') {
-        claw.y += 5;
-        if (claw.y >= claw.targetY) {
-          // Check collision with prizes
-          let caught = null;
-          for (const p of prizes) {
-            if (!p.caught && Math.hypot(p.x - (claw.x + claw.width / 2), p.y - claw.y) < prizeRadius) {
-              caught = p;
-              break;
-            }
-          }
-          if (caught) {
-            caught.caught = true;
-            claw.caughtPrize = caught;
-          }
-          claw.state = 'lifting';
-        }
-      }
+    function flipCard(card) {
+      if (lock || card === first || card.classList.contains('matched')) return;
+      card.classList.add('flipped');
+      card.style.backgroundColor = card.dataset.color;
 
-      // Lifting
-      if (claw.state === 'lifting') {
-        claw.y -= 5;
-        if (claw.y <= 0) {
-          if (claw.caughtPrize) {
-            score++;
-            scoreEl.textContent = score;
-            claw.caughtPrize = null;
-          }
-          claw.y = 0;
-          claw.state = 'idle';
-        }
+      if (!first) {
+        first = card;
+      } else {
+        second = card;
+        checkMatch();
       }
     }
 
-    function draw() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      // Draw prizes
-      for (const p of prizes) {
-        if (!p.caught) {
-          ctx.beginPath();
-          ctx.arc(p.x, p.y, prizeRadius, 0, Math.PI * 2);
-          ctx.fillStyle = p.color;
-          ctx.fill();
-          ctx.strokeStyle = '#000';
-          ctx.stroke();
-        }
+    function checkMatch() {
+      lock = true;
+      if (first.dataset.color === second.dataset.color) {
+        // Matched
+        first.classList.add('matched');
+        second.classList.add('matched');
+        matches++;
+        updateStatus();
+        resetTurn();
+      } else {
+        // Not a match
+        setTimeout(() => {
+          first.classList.remove('flipped');
+          second.classList.remove('flipped');
+          first.style.backgroundColor = '#888';
+          second.style.backgroundColor = '#888';
+          resetTurn();
+        }, 800);
       }
-
-      // Draw claw
-      ctx.fillStyle = '#aaa';
-      ctx.fillRect(claw.x, claw.y, claw.width, claw.height);
-      ctx.beginPath();
-      ctx.moveTo(claw.x + claw.width / 2 - 10, claw.y + claw.height);
-      ctx.lineTo(claw.x + claw.width / 2 - 10, claw.y + claw.height + 40);
-      ctx.lineTo(claw.x + claw.width / 2 + 10, claw.y + claw.height + 40);
-      ctx.lineTo(claw.x + claw.width / 2 + 10, claw.y + claw.height);
-      ctx.fill();
-
-      requestAnimationFrame(loop);
     }
 
-    function loop() {
-      update();
-      draw();
+    function resetTurn() {
+      [first, second] = [null, null];
+      lock = false;
     }
 
-    // Controls
-    document.addEventListener('keydown', e => {
-      if (claw.state === 'idle') {
-        if (e.key === 'ArrowLeft') claw.state = 'movingLeft';
-        if (e.key === 'ArrowRight') claw.state = 'movingRight';
+    function updateStatus() {
+      status.textContent = `Matches: ${matches} / ${pairs}`;
+      if (matches === pairs) {
+        status.textContent = 'Congratulations! You matched all colors.';
       }
-    });
-    document.addEventListener('keyup', e => {
-      if (e.key === 'ArrowLeft' && claw.state === 'movingLeft') claw.state = 'idle';
-      if (e.key === 'ArrowRight' && claw.state === 'movingRight') claw.state = 'idle';
-    });
-
-    document.getElementById('addTokenBtn').addEventListener('click', () => {
-      tokenCount++;
-      tokenCountEl.textContent = tokenCount;
-    });
-    document.getElementById('dropBtn').addEventListener('click', () => {
-      if (claw.state === 'idle' && tokenCount > 0) {
-        tokenCount--;
-        tokenCountEl.textContent = tokenCount;
-        claw.state = 'dropping';
-        claw.targetY = canvas.height - 50;
-      }
-    });
-
-    // Start game
-    loop();
+    }
   </script></body>
 </html>
