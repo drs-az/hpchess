@@ -1,174 +1,161 @@
 <!DOCTYPE html><html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Harry Potter Chess</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/chessboard.js/1.0.0/chessboard-1.0.0.min.css">
-    <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: url('https://images.unsplash.com/photo-1523987355523-c7b5b1c04eb8') center/cover no-repeat;
-            color: white;
-            text-align: center;
-            margin: 0;
-            padding: 0;
-        }
-        .container {
-            margin-top: 50px;
-        }
-        .hidden {
-            display: none;
-        }
-        select, input, button {
-            margin: 10px;
-            padding: 10px;
-            font-size: 1em;
-        }
-        #chessBoard {
-            margin: 20px auto;
-            width: 400px;
-        }
-        .info {
-            margin: 20px;
-        }
-        .clock {
-            margin-top: 10px;
-            font-size: 1.5em;
-        }
-        .gryffindor { color: #ae0001; }
-        .slytherin { color: #2a623d; }
-        .hufflepuff { color: #ffdb00; }
-        .ravenclaw { color: #222f5b; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Claw Machine Game</title>
+  <style>
+    body { margin: 0; font-family: sans-serif; text-align: center; background: #f0f0f0; }
+    #gameCanvas { background: #222; display: block; margin: 20px auto; border: 2px solid #000; }
+    #controls { margin: 10px; }
+    button { padding: 10px 20px; margin: 5px; font-size: 16px; cursor: pointer; }
+  </style>
 </head>
 <body>
-<div class="container" id="setup">
-    <h1>Harry Potter Chess</h1>
-    <div>
-        <input type="text" id="player1Name" placeholder="Player 1 Name">
-        <select id="player1House">
-            <option value="gryffindor">Gryffindor</option>
-            <option value="slytherin">Slytherin</option>
-            <option value="hufflepuff">Hufflepuff</option>
-            <option value="ravenclaw">Ravenclaw</option>
-        </select>
-    </div>
-    <div>
-        <input type="text" id="player2Name" placeholder="Player 2 Name">
-        <select id="player2House">
-            <option value="gryffindor">Gryffindor</option>
-            <option value="slytherin">Slytherin</option>
-            <option value="hufflepuff">Hufflepuff</option>
-            <option value="ravenclaw">Ravenclaw</option>
-        </select>
-    </div>
-    <button onclick="startGame()">Start Game</button>
-</div><div class="container hidden" id="game">
-    <div class="info">
-        <h2 id="player1Info"></h2>
-        <div class="clock" id="player1Clock">5:00</div>
-        <h2 id="player2Info"></h2>
-        <div class="clock" id="player2Clock">5:00</div>
-    </div>
-    <div id="chessBoard"></div>
-</div><script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.2/chess.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/chessboard.js/1.0.0/chessboard-1.0.0.min.js"></script><script>
-let timer1, timer2;
-let time1 = 300; // 5 minutes
-let time2 = 300;
-let currentPlayer = 'w';
-let board;
-let game = new Chess();
-let player1House, player2House;
+  <h1>Claw Machine</h1>
+  <div>Tokens: <span id="tokenCount">0</span> | Score: <span id="score">0</span></div>
+  <div id="controls">
+    <button id="addTokenBtn">Insert Token</button>
+    <button id="dropBtn">Drop Claw</button>
+  </div>
+  <canvas id="gameCanvas" width="400" height="600"></canvas>  <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const tokenCountEl = document.getElementById('tokenCount');
+    const scoreEl = document.getElementById('score');
 
-function startGame() {
-    const p1Name = document.getElementById('player1Name').value;
-    player1House = document.getElementById('player1House').value;
-    const p2Name = document.getElementById('player2Name').value;
-    player2House = document.getElementById('player2House').value;
+    let tokenCount = 0;
+    let score = 0;
 
-    document.getElementById('player1Info').innerHTML = `<span class="${player1House}">${p1Name} (${capitalize(player1House)})</span>`;
-    document.getElementById('player2Info').innerHTML = `<span class="${player2House}">${p2Name} (${capitalize(player2House)})</span>`;
+    // Claw definition
+    const claw = {
+      x: canvas.width / 2 - 20,
+      y: 0,
+      width: 40,
+      height: 20,
+      speed: 4,
+      state: 'idle', // 'idle', 'movingLeft', 'movingRight', 'dropping', 'lifting'
+      targetY: 0,
+      caughtPrize: null
+    };
 
-    document.getElementById('setup').classList.add('hidden');
-    document.getElementById('game').classList.remove('hidden');
-
-    drawBoard();
-    startClocks();
-}
-
-function capitalize(word) {
-    return word.charAt(0).toUpperCase() + word.slice(1);
-}
-
-function drawBoard() {
-    board = Chessboard('chessBoard', {
-        position: 'start',
-        draggable: true,
-        onDrop: onDrop
-    });
-}
-
-function onDrop(source, target) {
-    let move = game.move({
-        from: source,
-        to: target,
-        promotion: 'q'
-    });
-
-    if (move === null) return 'snapback';
-
-    switchPlayer();
-    checkGameOver();
-}
-
-function switchPlayer() {
-    currentPlayer = currentPlayer === 'w' ? 'b' : 'w';
-}
-
-function startClocks() {
-    timer1 = setInterval(() => {
-        if (currentPlayer === 'w') {
-            time1--;
-            updateClock('player1Clock', time1);
-            if (time1 <= 0) {
-                clearInterval(timer1);
-                clearInterval(timer2);
-                alert("Black wins on time!");
-            }
-        }
-    }, 1000);
-
-    timer2 = setInterval(() => {
-        if (currentPlayer === 'b') {
-            time2--;
-            updateClock('player2Clock', time2);
-            if (time2 <= 0) {
-                clearInterval(timer1);
-                clearInterval(timer2);
-                alert("White wins on time!");
-            }
-        }
-    }, 1000);
-}
-
-function updateClock(clockId, time) {
-    const minutes = Math.floor(time / 60);
-    const seconds = time % 60;
-    document.getElementById(clockId).textContent = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
-}
-
-function checkGameOver() {
-    if (game.game_over()) {
-        clearInterval(timer1);
-        clearInterval(timer2);
-        if (game.in_checkmate()) {
-            alert(`${currentPlayer === 'w' ? 'Black' : 'White'} wins by checkmate!`);
-        } else if (game.in_draw()) {
-            alert('Draw!');
-        } else if (game.in_stalemate()) {
-            alert('Stalemate!');
-        }
+    // Prize setup
+    const prizes = [];
+    const prizeRadius = 15;
+    function initPrizes() {
+      prizes.length = 0;
+      for (let i = 0; i < 8; i++) {
+        const x = 50 + (i % 4) * 80 + (Math.random() * 20 - 10);
+        const y = 300 + Math.floor(i / 4) * 60 + (Math.random() * 20 - 10);
+        prizes.push({
+          x,
+          y,
+          caught: false,
+          color: `hsl(${Math.random() * 360}, 70%, 60%)`
+        });
+      }
     }
-}
-</script></body>
+    initPrizes();
+
+    // Game loop
+    function update() {
+      // Horizontal movement
+      if (claw.state === 'movingLeft') claw.x = Math.max(0, claw.x - claw.speed);
+      if (claw.state === 'movingRight') claw.x = Math.min(canvas.width - claw.width, claw.x + claw.speed);
+
+      // Dropping
+      if (claw.state === 'dropping') {
+        claw.y += 5;
+        if (claw.y >= claw.targetY) {
+          // Check collision with prizes
+          let caught = null;
+          for (const p of prizes) {
+            if (!p.caught && Math.hypot(p.x - (claw.x + claw.width / 2), p.y - claw.y) < prizeRadius) {
+              caught = p;
+              break;
+            }
+          }
+          if (caught) {
+            caught.caught = true;
+            claw.caughtPrize = caught;
+          }
+          claw.state = 'lifting';
+        }
+      }
+
+      // Lifting
+      if (claw.state === 'lifting') {
+        claw.y -= 5;
+        if (claw.y <= 0) {
+          if (claw.caughtPrize) {
+            score++;
+            scoreEl.textContent = score;
+            claw.caughtPrize = null;
+          }
+          claw.y = 0;
+          claw.state = 'idle';
+        }
+      }
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Draw prizes
+      for (const p of prizes) {
+        if (!p.caught) {
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, prizeRadius, 0, Math.PI * 2);
+          ctx.fillStyle = p.color;
+          ctx.fill();
+          ctx.strokeStyle = '#000';
+          ctx.stroke();
+        }
+      }
+
+      // Draw claw
+      ctx.fillStyle = '#aaa';
+      ctx.fillRect(claw.x, claw.y, claw.width, claw.height);
+      ctx.beginPath();
+      ctx.moveTo(claw.x + claw.width / 2 - 10, claw.y + claw.height);
+      ctx.lineTo(claw.x + claw.width / 2 - 10, claw.y + claw.height + 40);
+      ctx.lineTo(claw.x + claw.width / 2 + 10, claw.y + claw.height + 40);
+      ctx.lineTo(claw.x + claw.width / 2 + 10, claw.y + claw.height);
+      ctx.fill();
+
+      requestAnimationFrame(loop);
+    }
+
+    function loop() {
+      update();
+      draw();
+    }
+
+    // Controls
+    document.addEventListener('keydown', e => {
+      if (claw.state === 'idle') {
+        if (e.key === 'ArrowLeft') claw.state = 'movingLeft';
+        if (e.key === 'ArrowRight') claw.state = 'movingRight';
+      }
+    });
+    document.addEventListener('keyup', e => {
+      if (e.key === 'ArrowLeft' && claw.state === 'movingLeft') claw.state = 'idle';
+      if (e.key === 'ArrowRight' && claw.state === 'movingRight') claw.state = 'idle';
+    });
+
+    document.getElementById('addTokenBtn').addEventListener('click', () => {
+      tokenCount++;
+      tokenCountEl.textContent = tokenCount;
+    });
+    document.getElementById('dropBtn').addEventListener('click', () => {
+      if (claw.state === 'idle' && tokenCount > 0) {
+        tokenCount--;
+        tokenCountEl.textContent = tokenCount;
+        claw.state = 'dropping';
+        claw.targetY = canvas.height - 50;
+      }
+    });
+
+    // Start game
+    loop();
+  </script></body>
 </html>
